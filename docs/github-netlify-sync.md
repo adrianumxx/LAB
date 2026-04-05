@@ -18,7 +18,18 @@ Così non devi caricare nulla a mano su Netlify: basta che il deploy sia **“co
 
 - GitHub → **New repository** (vuoto, senza README se già hai il progetto in locale).
 
-### 2. Collega la cartella locale e fai il primo push
+### 2. Identità Git (solo prima volta su questa macchina)
+
+Se il commit fallisce con “Author identity unknown”:
+
+```powershell
+git config --global user.name "Il Tuo Nome"
+git config --global user.email "tua-email-o-noreply-github"
+```
+
+Per **solo questo repo** (senza `--global`): esegui i comandi dalla cartella del progetto e ometti `--global`.
+
+### 3. Collega la cartella locale e fai il primo push
 
 Da PowerShell nella cartella del progetto:
 
@@ -34,6 +45,12 @@ git push -u origin main
 *(Se `git remote` esiste già, usa `git remote set-url origin …`.)*
 
 **Non committare mai** `.env.local` o segreti: sono già in `.gitignore`.
+
+Il repository include già un **commit iniziale** (`main`). Se è il tuo primo push su un repo GitHub vuoto:
+
+```powershell
+git push -u origin main
+```
 
 ---
 

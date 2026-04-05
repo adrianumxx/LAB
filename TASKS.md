@@ -21,7 +21,8 @@ Lavorare **un sprint alla volta**; aggiornare qui a fine sprint.
 - [x] `netlify.toml` + `@netlify/plugin-nextjs` — build Next su Netlify
 - [x] `.github/workflows/ci.yml` — lint + vitest + `next build` su push/PR verso `main`
 - [x] `.vscode/settings.json` — `git.postCommitCommand: push` (dopo commit da UI Cursor/VS Code)
-- [ ] **Da fare una tantum:** `git remote add origin …`, primo `git push`, import sito Netlify da GitHub
+- [x] **Commit iniziale** su `main` (snapshot produzione in repo locale)
+- [ ] **Da fare una tantum:** `git remote add origin …`, `git push -u origin main`, import sito Netlify da GitHub
 
 ### [QA / stress] Matrice 100 percorsi + Playwright smoke
 - [x] `docs/qa-100-journeys.md` — 10 squadre × 10 scenari (marketing, auth, billing, manager/owner/tenant, API, a11y, edge)
