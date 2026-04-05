@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { weeklyManagerDigestEmail } from '@/emails/templates/weekly-manager-digest'
+import { managerIsFreeTier, type ProfileBillingFields } from '@/lib/billing-plan-policy'
 import { createSupabaseAdminClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 import { absoluteAppOrigin } from '@/lib/request-origin'
 import { isResendConfigured } from '@/lib/resend/env'
@@ -106,7 +107,7 @@ async function runReminders(request: Request) {
 
   const { data: profiles, error: profError } = await admin
     .from('profiles')
-    .select('id, email')
+    .select('id, email, billing_plan, stripe_subscription_status')
     .in('id', managerIds)
 
   if (profError) {
@@ -126,6 +127,10 @@ async function runReminders(request: Request) {
   for (const [managerId, count] of countByManager) {
     const to = emailById.get(managerId)
     if (!to) {
+      continue
+    }
+    const profRow = (profiles ?? []).find((p) => p.id === managerId)
+    if (managerIsFreeTier(profRow as ProfileBillingFields | null | undefined)) {
       continue
     }
     const { subject, html } = weeklyManagerDigestEmail({

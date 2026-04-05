@@ -31,6 +31,13 @@ test.describe('Marketing & documenti pubblici', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   })
 
+  test('pricing: H1 e griglia piani', async ({ page }) => {
+    await page.goto('/pricing')
+    await expect(page.getByRole('heading', { level: 1, name: /Scala il tuo portafoglio/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'SOLO', exact: true })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Accesso e informazioni' })).toBeVisible()
+  })
+
   test('sitemap e robots rispondono', async ({ request }) => {
     const sm = await request.get('/sitemap.xml')
     expect(sm.ok()).toBeTruthy()
@@ -70,6 +77,13 @@ test.describe('Viewport stretta (smoke layout)', () => {
 
   test('landing: nessuna scroll orizzontale eccessiva', async ({ page }) => {
     await page.goto('/')
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1)
+  })
+
+  test('pricing: nessuna scroll orizzontale eccessiva', async ({ page }) => {
+    await page.goto('/pricing')
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth)
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1)

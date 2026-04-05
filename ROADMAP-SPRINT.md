@@ -208,6 +208,9 @@ Dettaglio nei singoli sprint sotto (righe aggiunte alle tabelle).
 | 8 | Qualità / Lighthouse + **audit mappatura + menu mobile rifinito** |
 | 9 | **Resend + automazioni / reminder** |
 | 10 | **Lancio ufficiale** — migration, env, smoke, Stripe/Resend prod (`docs/launch-official.md`) |
+| 11–19 | **Readiness YC / B2B** — pricing, multi-piano Stripe, limiti unità, metriche, ops, legal, pilot, pitch (`docs/roadmap-yc-sprints.md`) |
+
+**Dettaglio sprint 11–19:** vedi **`docs/roadmap-yc-sprints.md`** (packaging, Stripe, enforcement piani, analytics, Sentry, security doc, legal EU, pilot, deck).
 
 ---
 

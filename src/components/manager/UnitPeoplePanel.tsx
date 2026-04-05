@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -11,8 +12,11 @@ import {
   type UnitOwnerLink,
   type UnitTenantLink,
 } from '@/hooks/useManagerUnitPageData'
+import { useBillingProfile } from '@/hooks/useBillingProfile'
 import { InviteUnitMemberError } from '@/hooks/invite-unit-member-error'
 import { useUnitMemberInvite } from '@/hooks/useUnitMemberInvite'
+import { useAuthStore } from '@/lib/auth-store'
+import { managerIsFreeTier } from '@/lib/billing-plan-policy'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { isUuid } from '@/lib/validation/uuid'
 import { UserMinus, Users } from 'lucide-react'
@@ -52,6 +56,10 @@ export function UnitPeoplePanel({
   const [inviteRole, setInviteRole] = useState<'owner' | 'tenant'>('tenant')
   const [inviteNotice, setInviteNotice] = useState<string | null>(null)
   const [inviteHint, setInviteHint] = useState<string | null>(null)
+
+  const billingUserId = useAuthStore((s) => s.user?.id ?? null)
+  const billingProfile = useBillingProfile(billingUserId)
+  const inviteFreeTier = managerIsFreeTier(billingProfile.data ?? null)
 
   const invalidate = () =>
     void queryClient.invalidateQueries({ queryKey: managerUnitQueryKey(unitId) })
@@ -153,6 +161,10 @@ export function UnitPeoplePanel({
     setFormError(null)
     setInviteNotice(null)
     setInviteHint(null)
+    if (inviteFreeTier) {
+      setFormError('Email invites require an active subscription. Open Billing or use UUID linking below.')
+      return
+    }
     const trimmed = inviteEmail.trim().toLowerCase()
     if (!trimmed || !trimmed.includes('@')) {
       setFormError('Enter a valid email address.')
@@ -238,49 +250,61 @@ export function UnitPeoplePanel({
           </p>
         )}
 
-        <form onSubmit={submitInvite} className="space-y-3 rounded-lg border border-border bg-neutral-50 dark:bg-neutral-900/40 p-4">
+        <div className="space-y-3 rounded-lg border border-border bg-neutral-50 dark:bg-neutral-900/40 p-4">
           <h3 className="text-sm font-semibold text-primary">Invite by email</h3>
-          <p className="text-xs text-secondary">
-            For <strong className="text-primary">new</strong> users only: Supabase sends a signup
-            link and links them here after they register. Requires{' '}
-            <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> and the{' '}
-            <code className="text-xs">pending_unit_invites</code> migration.{' '}
-            <strong className="text-primary">Existing accounts</strong> cannot use this path — paste
-            their Auth user UUID below instead.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FormField>
-              <FormLabel htmlFor="invite-email">Email</FormLabel>
-              <Input
-                id="invite-email"
-                type="email"
-                autoComplete="email"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="name@example.com"
-                disabled={busy}
-              />
-            </FormField>
-            <FormField>
-              <FormLabel htmlFor="invite-role">Role</FormLabel>
-              <select
-                id="invite-role"
-                value={inviteRole}
-                onChange={(e) =>
-                  setInviteRole(e.target.value === 'owner' ? 'owner' : 'tenant')
-                }
-                disabled={busy}
-                className="w-full px-4 py-2 border border-border rounded-md bg-surface text-primary text-sm"
-              >
-                <option value="tenant">Tenant</option>
-                <option value="owner">Owner</option>
-              </select>
-            </FormField>
-          </div>
-          <Button type="submit" size="sm" disabled={busy}>
-            {inviteMutation.isPending ? 'Sending…' : 'Send invite'}
-          </Button>
-        </form>
+          {inviteFreeTier ? (
+            <p className="text-xs text-secondary leading-relaxed">
+              Email invites are included with a paid plan.{' '}
+              <Link href="/account/billing" className="text-primary font-medium underline underline-offset-4">
+                Open Billing
+              </Link>{' '}
+              to subscribe, or link people using their Auth user UUID in the sections below.
+            </p>
+          ) : (
+            <form onSubmit={submitInvite} className="space-y-3">
+              <p className="text-xs text-secondary">
+                For <strong className="text-primary">new</strong> users only: Supabase sends a signup
+                link and links them here after they register. Requires{' '}
+                <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code> and the{' '}
+                <code className="text-xs">pending_unit_invites</code> migration.{' '}
+                <strong className="text-primary">Existing accounts</strong> cannot use this path — paste
+                their Auth user UUID below instead.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <FormField>
+                  <FormLabel htmlFor="invite-email">Email</FormLabel>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    autoComplete="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    disabled={busy}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="invite-role">Role</FormLabel>
+                  <select
+                    id="invite-role"
+                    value={inviteRole}
+                    onChange={(e) =>
+                      setInviteRole(e.target.value === 'owner' ? 'owner' : 'tenant')
+                    }
+                    disabled={busy}
+                    className="w-full px-4 py-2 border border-border rounded-md bg-surface text-primary text-sm"
+                  >
+                    <option value="tenant">Tenant</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </FormField>
+              </div>
+              <Button type="submit" size="sm" disabled={busy}>
+                {inviteMutation.isPending ? 'Sending…' : 'Send invite'}
+              </Button>
+            </form>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <form onSubmit={submitOwner} className="space-y-3">

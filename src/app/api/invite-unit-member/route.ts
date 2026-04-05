@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { inviteSentConfirmationEmail } from '@/emails/templates/invite-sent-confirmation'
+import { managerIsFreeTier, type ProfileBillingFields } from '@/lib/billing-plan-policy'
 import { createSupabaseAdminClient, isInviteServerConfigured } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { isResendConfigured } from '@/lib/resend/env'
@@ -65,6 +66,23 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: inviterProfile } = await supabase
+    .from('profiles')
+    .select('billing_plan, stripe_subscription_status')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (managerIsFreeTier(inviterProfile as ProfileBillingFields | null)) {
+    return NextResponse.json(
+      {
+        error:
+          'Email invites are not available without an active subscription. Open Billing to subscribe, or link people with their Auth user UUID below.',
+        code: 'FREE_TIER_INVITES_DISABLED',
+      },
+      { status: 403 },
+    )
   }
 
   const { data: unit, error: unitError } = await supabase

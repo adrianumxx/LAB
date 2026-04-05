@@ -8,6 +8,7 @@ export interface BillingProfileRow {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   stripe_subscription_status: string | null
+  stripe_subscription_price_id: string | null
   billing_plan: string | null
 }
 
@@ -25,7 +26,7 @@ async function fetchBillingProfile(): Promise<BillingProfileRow | null> {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'stripe_customer_id, stripe_subscription_id, stripe_subscription_status, billing_plan',
+      'stripe_customer_id, stripe_subscription_id, stripe_subscription_status, stripe_subscription_price_id, billing_plan',
     )
     .eq('id', user.id)
     .maybeSingle()

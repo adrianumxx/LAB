@@ -57,6 +57,22 @@ export function useUploadTenantDocument(unitId: string) {
         throw new Error('Only PDF files are allowed')
       }
 
+      const tierRes = await fetch(
+        `/api/tenant/unit-manager-tier?unitId=${encodeURIComponent(unitId)}`,
+      )
+      const tierJson = (await tierRes.json()) as {
+        storageAllowed?: boolean
+        error?: string
+      }
+      if (!tierRes.ok) {
+        throw new Error(tierJson.error ?? 'Could not verify upload policy')
+      }
+      if (tierJson.storageAllowed !== true) {
+        throw new Error(
+          'Uploads are disabled until your property manager has an active subscription.',
+        )
+      }
+
       const path = buildTenantObjectPath(unitId, user.id, file.name)
 
       const { error: upError } = await supabase.storage

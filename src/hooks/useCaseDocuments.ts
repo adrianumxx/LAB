@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { managerIsFreeTier, type ProfileBillingFields } from '@/lib/billing-plan-policy'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { buildCaseObjectPath, CASE_FILES_BUCKET } from '@/lib/storage/case-files'
@@ -46,6 +47,18 @@ export function useUploadCaseDocument(caseId: string) {
       } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('You must be signed in to upload')
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('billing_plan, stripe_subscription_status')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (managerIsFreeTier(profile as ProfileBillingFields | null)) {
+        throw new Error(
+          'Case document uploads require an active subscription. Open Billing to subscribe.',
+        )
       }
 
       const path = buildCaseObjectPath(caseId, file.name)

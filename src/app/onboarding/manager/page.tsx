@@ -90,6 +90,13 @@ export default function ManagerOnboarding() {
       })
 
       if (unitError) {
+        const msg = unitError.message.toLowerCase()
+        if (msg.includes('row-level security')) {
+          setError(
+            'You have reached the unit limit for your current plan. Subscribe in Billing to add more units.',
+          )
+          return
+        }
         setError(unitError.message)
         return
       }

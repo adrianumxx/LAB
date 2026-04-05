@@ -41,5 +41,8 @@ yarn-error.log*
 *.swp
 *.swo
 
+# supabase CLI cache (npx supabase)
+supabase/.temp/
+
 # OS
 Thumbs.db

@@ -1,9 +1,10 @@
 # TASKS.md — PROGRESS TRACKER
-# Aggiornato 2026-04-05 — Sprint 10: preparazione lancio ufficiale (doc go-live)
+# Aggiornato 2026-04-05 — Sprint 13: enforcement unità + gate FREE
 
 ## Roadmap per sprint (sviluppo incrementale)
 
 Piano sprint **0–10** in **`ROADMAP-SPRINT.md`**: **Sprint 1–9** chiusi in codice (2026-04-05); **Sprint 10** = lancio ufficiale (operativo: DB, env, smoke, cutover) — guide **`docs/launch-official.md`** + **`docs/go-live-smoke.md`**.  
+**Sprint 11–19 (YC / B2B readiness):** piano completo in **`docs/roadmap-yc-sprints.md`** (pricing pubblico, Stripe multi-piano, limiti unità, analytics, osservabilità, security, legal EU, pilot, pitch).  
 Epic trasversale **IA / pagine / collegamenti / menu mobile** distribuito su **Sprint 4–8** — vedi sezione sotto e tabelle in `ROADMAP-SPRINT.md`.  
 Dettaglio prodotto in **`SPEC.md`** → *PERCORSO CLIENTE: RUOLO, BISOGNI, DASHBOARD, EMAIL*.  
 Lavorare **un sprint alla volta**; aggiornare qui a fine sprint.
@@ -39,6 +40,42 @@ Lavorare **un sprint alla volta**; aggiornare qui a fine sprint.
 - [x] `ROADMAP-SPRINT.md` — sezione Sprint 10
 - [ ] **Da fare in ambiente:** eseguire checklist lancio (staging → prod) — non automatizzabile dal solo repo
 - **Status:** 📋 **DOC PRONTA** — completare Fasi A–D sui tuoi ambienti
+
+### [SPRINT 11] Packaging commerciale: pagina prezzi, ICP landing, Enterprise mailto
+- [x] `src/lib/pricing-plans.ts` — tier FREE / SOLO / START / CORE / PRO / Enterprise + copy limiti FREE + definizione unità + ICP
+- [x] `src/lib/enterprise-contact.ts` — `NEXT_PUBLIC_SALES_EMAIL` → mailto, fallback `/role-entry`
+- [x] `src/app/pricing/page.tsx` + `src/components/pricing/PricingContent.tsx` — marketing, CTA signup manager, link `/account/billing`
+- [x] `MarketingSiteHeader` / `MarketingSiteFooter` — link Prezzi; landing usa componenti condivisi + blocco ICP con link «Vedi i piani»
+- [x] `sitemap.ts` `/pricing`; `docs/ia-routes.md`; `.env.example` `NEXT_PUBLIC_SALES_EMAIL`
+- [x] E2E: pricing H1 + layout 375px in `e2e/public-and-guards.spec.ts`
+- [ ] **Sprint 14+:** analytics attivazione (vedi `docs/roadmap-yc-sprints.md`)
+- **Status:** ✅ COMPLETATO in codice — verificare `npm run build` / `npm run test:e2e`
+
+### [SPRINT 13] Enforcement unità & piani (gate FREE)
+- [x] `src/lib/billing-plan-policy.ts` + test — cap unità, free tier, piano effettivo
+- [x] Migration `20260406000000_unit_cap_rls.sql` — RLS insert `units` con `manager_can_insert_unit`
+- [x] `POST /api/manager/units` — creazione unità con pre-check e messaggi `UNIT_CAP_REACHED`
+- [x] `GET /api/tenant/unit-manager-tier` — tenant: storage consentito se manager a pagamento
+- [x] `/manager/units` — card “Add unit”, contatore `n/cap`, CTA Billing
+- [x] Onboarding manager — messaggio se RLS blocca per limite
+- [x] `POST /api/invite-unit-member` — 403 free tier; `UnitPeoplePanel` nasconde form email se free
+- [x] Cron digest + `notify/maintenance-created` — skip email se manager free tier
+- [x] `useCaseDocuments` / `useTenantDocuments` — blocco upload se free / manager non pagante
+- [x] `docs/sprint13-billing-limits.md`, `docs/ia-routes.md`
+- [ ] **Da applicare su Supabase:** stesso bundle `docs/supabase-sql-editor-sprint-12-13.sql` (include unit cap RLS)
+- **Status:** ✅ COMPLETATO in codice — `npm test` / `npm run build`
+
+### [SPRINT 12] Stripe multi-piano & mirror DB
+- [x] Env: `STRIPE_PRICE_ID_SOLO` / `_START` / `_CORE` / `_PRO` + fallback legacy `STRIPE_PRICE_ID` per PRO (`src/lib/stripe/env.ts`)
+- [x] `src/lib/stripe/checkout-plans.ts` — slug, etichette, `billingPlanSlugFromStripePriceId`, `getConfiguredCheckoutPlanSlugs`
+- [x] `POST /api/stripe/checkout` — body JSON `{ plan }`, default `pro`; metadata subscription `billing_plan`
+- [x] Webhook — `billing_plan` da price id subscription; `stripe_subscription_price_id` su `profiles`
+- [x] Migration `20260405900000_profiles_stripe_subscription_price.sql`
+- [x] `/account/billing` — pulsanti per ogni piano configurato; link `/pricing`; nota upgrade/downgrade Portal
+- [x] `docs/stripe-setup.md`, `docs/launch-official.md`, `.env.example`; test `src/lib/stripe/checkout-plans.test.ts`
+- [ ] **Da fare in Stripe Dashboard:** creare 4 prezzi ricorrenti e valorizzare env; test 4 checkout (DoD roadmap)
+- [ ] **Da applicare su Supabase:** eseguire `docs/supabase-sql-editor-sprint-12-13.sql` (vedi `docs/supabase-apply-migrations.md`)
+- **Status:** ✅ COMPLETATO in codice — `npm test` / `npm run build`
 
 ### [SPRINT 9] Resend: template, eventi immediati, cron, notification_log
 - [x] Dipendenza `resend`; `src/lib/resend/env.ts`, `send-transactional.ts`; `log-notification`, `recipient-hash` + test
