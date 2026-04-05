@@ -57,7 +57,8 @@ Applicare **nell’ordine** (timestamp nel nome file) sul progetto **staging**, 
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_…` | `pk_live_…` |
 | `STRIPE_SECRET_KEY` | `sk_test_…` | `sk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | Secret webhook **test** endpoint staging | Secret webhook **live** endpoint prod |
-| `STRIPE_PRICE_ID` | Price test | Price live |
+| `STRIPE_PRICE_ID_SOLO` / `_START` / `_CORE` / `_PRO` | Price test (4 piani) | Price live (4 piani) |
+| `STRIPE_PRICE_ID` (opz.) | Fallback solo per PRO se `_PRO` assente | Idem |
 
 **Cutover live:** creare in Stripe Dashboard prodotti/prezzi live, nuovo webhook su `https://<dominio-prod>/api/stripe/webhook`, aggiornare env su **solo** l’ambiente produzione. Non mischiare `sk_live` con DB staging.
 

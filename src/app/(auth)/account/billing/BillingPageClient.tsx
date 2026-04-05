@@ -11,11 +11,17 @@ import { NetworkQueryError } from '@/components/ui/NetworkQueryError'
 import { billingProfileQueryKey, useBillingProfile } from '@/hooks/useBillingProfile'
 import { useAuthStore } from '@/lib/auth-store'
 import { subscriptionStatusGrantsAccess } from '@/lib/billing'
+import { type BillingPlanSlug, billingPlanLabel } from '@/lib/stripe/checkout-plans'
 import { getStripePublishableKey, isStripeCheckoutConfigured } from '@/lib/stripe/env'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
+import { cn } from '@/lib/utils'
 import { CreditCard } from 'lucide-react'
 
-export function BillingPageClient() {
+export interface BillingPageClientProps {
+  configuredPlans: readonly BillingPlanSlug[]
+}
+
+export function BillingPageClient({ configuredPlans }: BillingPageClientProps) {
   const user = useAuthStore((s) => s.user)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -55,11 +61,15 @@ export function BillingPageClient() {
   const row = billing.data
   const active = subscriptionStatusGrantsAccess(row?.stripe_subscription_status)
 
-  async function startCheckout() {
+  async function startCheckout(plan: BillingPlanSlug) {
     setActionError(null)
     setCheckoutPending(true)
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
       const data = (await res.json()) as { url?: string; error?: string }
       if (!res.ok) {
         throw new Error(data.error ?? 'Checkout failed')
@@ -105,7 +115,13 @@ export function BillingPageClient() {
           Billing
         </h1>
         <p className="text-landing-muted text-sm">
-          Manage your subscription with Stripe. Secrets stay on the server.
+          Manage your subscription with Stripe. Secrets stay on the server.{' '}
+          <Link
+            href="/pricing"
+            className="text-[var(--cta-solid)] font-medium hover:underline underline-offset-4"
+          >
+            View plans
+          </Link>
         </p>
       </div>
 
@@ -164,27 +180,47 @@ export function BillingPageClient() {
               </li>
               <li>
                 <span className="text-landing-fg font-medium">Plan: </span>
-                {row.billing_plan ?? '—'}
+                {row.billing_plan ? row.billing_plan.toUpperCase() : '—'}
               </li>
+              {row.stripe_subscription_price_id ? (
+                <li>
+                  <span className="text-landing-fg font-medium">Stripe price: </span>
+                  <code className="text-xs break-all">{row.stripe_subscription_price_id}</code>
+                </li>
+              ) : null}
             </ul>
           )}
 
           {actionError && <FormError>{actionError}</FormError>}
 
-          <div className="flex flex-col gap-2">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-landing-muted">
+              Subscribe
+            </p>
+            <div className="flex flex-col gap-2">
+              {configuredPlans.map((plan) => (
+                <Button
+                  key={plan}
+                  type="button"
+                  variant="cta"
+                  disabled={!checkoutConfigured || checkoutPending || !isSupabaseConfigured()}
+                  onClick={() => void startCheckout(plan)}
+                >
+                  {checkoutPending ? 'Redirecting…' : `Checkout — ${billingPlanLabel(plan)}`}
+                </Button>
+              ))}
+            </div>
+            {configuredPlans.length === 0 && checkoutConfigured && (
+              <p className="text-xs text-landing-muted">
+                No plan prices resolved — check server env mapping.
+              </p>
+            )}
             <Button
               type="button"
-              variant="primary"
-              disabled={!checkoutConfigured || checkoutPending || !isSupabaseConfigured()}
-              onClick={() => void startCheckout()}
-            >
-              {checkoutPending ? 'Redirecting…' : 'Subscribe with Stripe'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
+              variant="outline"
               disabled={!row?.stripe_customer_id || portalPending || !isSupabaseConfigured()}
               onClick={() => void openPortal()}
+              className={cn('w-full border-white/20 text-landing-fg hover:bg-white/10')}
             >
               {portalPending ? 'Opening…' : 'Manage billing (Customer Portal)'}
             </Button>
@@ -192,8 +228,19 @@ export function BillingPageClient() {
 
           {!checkoutConfigured && (
             <p className="text-xs text-landing-muted">
-              Set <code>STRIPE_SECRET_KEY</code> and <code>STRIPE_PRICE_ID</code> (recurring price)
-              in <code>.env.local</code>. See <code>docs/stripe-setup.md</code>.
+              Set <code>STRIPE_SECRET_KEY</code> and at least one of{' '}
+              <code>STRIPE_PRICE_ID_SOLO</code>, <code>STRIPE_PRICE_ID_START</code>,{' '}
+              <code>STRIPE_PRICE_ID_CORE</code>, <code>STRIPE_PRICE_ID_PRO</code> (or legacy{' '}
+              <code>STRIPE_PRICE_ID</code> for PRO only) in <code>.env.local</code>. See{' '}
+              <code>docs/stripe-setup.md</code>.
+            </p>
+          )}
+
+          {checkoutConfigured && (
+            <p className="text-xs text-landing-muted leading-relaxed">
+              <strong className="text-landing-fg font-medium">Upgrade / change plan:</strong> use
+              Customer Portal if your Stripe configuration allows switching products; otherwise cancel
+              and start a new Checkout for the target plan (same account email).
             </p>
           )}
         </CardContent>

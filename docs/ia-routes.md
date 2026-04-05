@@ -5,6 +5,7 @@ Mappa delle route App Router e ruoli previsti. **R** = area protetta da `RoleGua
 | Route | Manager | Owner | Tenant | Note |
 |-------|:-------:|:-----:|:------:|------|
 | `/` | — | — | — | Redirect in base a sessione/ruolo |
+| `/pricing` | — | — | — | Marketing: piani e prezzi |
 | `/role-entry` | ✓ | ✓ | ✓ | Scelta ruolo / ingresso |
 | `/login`, `/signup` | ✓ | ✓ | ✓ | Auth |
 | `/account/setup` | ✓ | ✓ | ✓ | Completamento ruolo profilo |
@@ -29,7 +30,9 @@ Mappa delle route App Router e ruoli previsti. **R** = area protetta da `RoleGua
 | `/tenant/maintenance` | — | — | **R** | Lista + nuova richiesta |
 | `/tenant/maintenance/[requestId]` | — | — | **R** | Dettaglio richiesta |
 | `/privacy`, `/terms` | ✓ | ✓ | ✓ | Legali |
-| `/api/invite-unit-member` | server | — | — | POST invito (sessione manager) |
+| `/api/invite-unit-member` | server | — | — | POST invito (sessione manager); FREE tier senza abbonamento → 403 |
+| `/api/manager/units` | **R** | — | — | POST crea unità (enforcement cap piano) |
+| `/api/tenant/unit-manager-tier` | — | — | sessione | GET `?unitId=` — policy upload (manager a pagamento) |
 | `/api/stripe/checkout` | sessione | sessione | sessione | POST Checkout |
 | `/api/stripe/portal` | sessione | sessione | sessione | POST Portal |
 | `/api/stripe/webhook` | — | — | — | Stripe → server |

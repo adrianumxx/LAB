@@ -1,10 +1,22 @@
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
+import { billingPlanSlugFromStripePriceId } from '@/lib/stripe/checkout-plans'
 import { createSupabaseAdminClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 import { getStripeWebhookSecret, isStripeWebhookConfigured } from '@/lib/stripe/env'
 import { getStripe } from '@/lib/stripe/server'
 
 export const runtime = 'nodejs'
+
+function subscriptionPrimaryPriceId(sub: Stripe.Subscription): string | null {
+  const item = sub.items?.data?.[0]
+  if (!item) return null
+  const raw = item.price
+  if (typeof raw === 'string') return raw
+  if (raw && typeof raw === 'object' && 'id' in raw && typeof raw.id === 'string') {
+    return raw.id
+  }
+  return null
+}
 
 async function patchProfile(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -84,13 +96,16 @@ export async function POST(request: Request) {
         if (!userId) break
         const customer =
           typeof sub.customer === 'string' ? sub.customer : sub.customer.id
-        const plan =
-          sub.status === 'active' || sub.status === 'trialing' ? 'pro' : null
+        const priceId = subscriptionPrimaryPriceId(sub)
+        const slug = billingPlanSlugFromStripePriceId(priceId)
+        const active = sub.status === 'active' || sub.status === 'trialing'
+        const billingPlan = active && slug ? slug : null
         await patchProfile(admin, userId, {
           stripe_customer_id: customer,
           stripe_subscription_id: sub.id,
           stripe_subscription_status: sub.status,
-          billing_plan: plan,
+          stripe_subscription_price_id: priceId,
+          billing_plan: billingPlan,
         })
         break
       }
@@ -101,6 +116,7 @@ export async function POST(request: Request) {
         await patchProfile(admin, userId, {
           stripe_subscription_status: 'canceled',
           billing_plan: null,
+          stripe_subscription_price_id: null,
         })
         break
       }

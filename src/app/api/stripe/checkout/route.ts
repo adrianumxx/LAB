@@ -1,17 +1,28 @@
 import { NextResponse } from 'next/server'
 import { absoluteAppOrigin } from '@/lib/request-origin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { getStripePriceId, isStripeCheckoutConfigured } from '@/lib/stripe/env'
+import {
+  type BillingPlanSlug,
+  isBillingPlanSlug,
+} from '@/lib/stripe/checkout-plans'
+import {
+  getStripePriceIdForPlan,
+  isStripeCheckoutConfigured,
+} from '@/lib/stripe/env'
 import { getStripe } from '@/lib/stripe/server'
 
 export const runtime = 'nodejs'
+
+function defaultPlan(): BillingPlanSlug {
+  return 'pro'
+}
 
 export async function POST(request: Request) {
   if (!isStripeCheckoutConfigured()) {
     return NextResponse.json(
       {
         error:
-          'Stripe checkout is not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID in .env.local.',
+          'Stripe checkout is not configured. Set STRIPE_SECRET_KEY and at least one of STRIPE_PRICE_ID_SOLO, STRIPE_PRICE_ID_START, STRIPE_PRICE_ID_CORE, STRIPE_PRICE_ID_PRO (or legacy STRIPE_PRICE_ID for PRO only). See .env.example.',
       },
       { status: 503 },
     )
@@ -27,7 +38,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const priceId = getStripePriceId() as string
+  let plan: BillingPlanSlug = defaultPlan()
+  const contentType = request.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    try {
+      const body = (await request.json()) as { plan?: unknown }
+      if (typeof body?.plan === 'string' && isBillingPlanSlug(body.plan)) {
+        plan = body.plan
+      }
+    } catch {
+      /* body opzionale o non JSON */
+    }
+  }
+
+  const priceId = getStripePriceIdForPlan(plan)
+  if (!priceId) {
+    return NextResponse.json(
+      {
+        error: `No Stripe price configured for plan "${plan}". Set the matching STRIPE_PRICE_ID_* env var.`,
+      },
+      { status: 400 },
+    )
+  }
+
   const origin = absoluteAppOrigin(request)
   const email = user.email ?? undefined
 
@@ -75,9 +108,9 @@ export async function POST(request: Request) {
       success_url: `${origin}/account/billing?checkout=success`,
       cancel_url: `${origin}/account/billing?checkout=canceled`,
       client_reference_id: user.id,
-      metadata: { supabase_user_id: user.id },
+      metadata: { supabase_user_id: user.id, billing_plan: plan },
       subscription_data: {
-        metadata: { supabase_user_id: user.id },
+        metadata: { supabase_user_id: user.id, billing_plan: plan },
       },
       allow_promotion_codes: true,
     })

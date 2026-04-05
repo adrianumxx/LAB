@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { maintenanceNewForManagerEmail } from '@/emails/templates/maintenance-new-for-manager'
+import { managerIsFreeTier, type ProfileBillingFields } from '@/lib/billing-plan-policy'
 import { createSupabaseAdminClient, isServiceRoleConfigured } from '@/lib/supabase/admin'
 import { absoluteAppOrigin } from '@/lib/request-origin'
 import { isResendConfigured } from '@/lib/resend/env'
@@ -86,14 +87,32 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileError } = await admin
     .from('profiles')
-    .select('email')
+    .select('email, billing_plan, stripe_subscription_status')
     .eq('id', workspace.created_by)
     .maybeSingle()
 
-  const managerEmail =
-    profile && typeof profile.email === 'string' ? profile.email.trim() : ''
+  if (profileError) {
+    return NextResponse.json({ error: profileError.message }, { status: 500 })
+  }
+  if (!profile) {
+    return NextResponse.json(
+      { error: 'Manager profile not available for this workspace.' },
+      { status: 422 },
+    )
+  }
 
-  if (profileError || !managerEmail || !managerEmail.includes('@')) {
+  if (managerIsFreeTier(profile as ProfileBillingFields)) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: 'Manager is on free tier — transactional emails require an active subscription.',
+    })
+  }
+
+  const managerEmail =
+    typeof profile.email === 'string' ? profile.email.trim() : ''
+
+  if (!managerEmail || !managerEmail.includes('@')) {
     return NextResponse.json(
       { error: 'Manager email not available for this workspace.' },
       { status: 422 },

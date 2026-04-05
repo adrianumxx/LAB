@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { MarketingSiteFooter } from '@/components/layout/MarketingSiteFooter'
+import { MarketingSiteHeader } from '@/components/layout/MarketingSiteHeader'
 import {
   ArrowRight,
   ArrowUpRight,
@@ -10,11 +12,11 @@ import {
   Home,
   LayoutDashboard,
   Shield,
-  Sparkles,
   User,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { buttonVariants } from '@/components/ui/Button'
+import { PRICING_ICP_LINE } from '@/lib/pricing-plans'
 import { cn } from '@/lib/utils'
 
 const stats = [
@@ -88,37 +90,7 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-app text-primary">
-      {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-sticky border-b border-white/10 bg-landing-ink/80 backdrop-blur-xl text-landing-fg supports-[backdrop-filter]:bg-landing-ink/70">
-        <div className="container h-16 flex items-center justify-between gap-4">
-          <Link
-            href="/"
-            className="font-display text-lg font-semibold tracking-tight text-landing-fg flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-solid)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-ink)]"
-          >
-            <span
-              className="flex size-11 min-h-11 min-w-11 items-center justify-center rounded-xl bg-[var(--cta-solid)] text-[var(--cta-on-solid)] motion-safe:transition-transform motion-safe:duration-base motion-safe:hover:scale-[1.03]"
-              aria-hidden
-            >
-              <Sparkles className="size-4" aria-hidden />
-            </span>
-            TMP
-          </Link>
-          <nav className="flex items-center gap-2 sm:gap-3" aria-label="Accesso">
-            <Link
-              href="/login"
-              className={cn(
-                buttonVariants({ variant: 'onDarkGhost', size: 'sm' }),
-                'hidden sm:inline-flex',
-              )}
-            >
-              Accedi
-            </Link>
-            <Link href="/role-entry" className={cn(buttonVariants({ variant: 'cta', size: 'sm' }))}>
-              Entra
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <MarketingSiteHeader />
 
       <main id="main-content" className="flex-1">
         {/* Hero — CSS stagger (primo paint leggero) */}
@@ -135,6 +107,16 @@ export function LandingPage() {
             <p className="mt-8 text-lg sm:text-xl text-landing-muted max-w-2xl leading-relaxed text-pretty animate-in-up animate-delay-2">
               Unità, persone, case e documenti collegati. Per chi gestisce, possiede o vive l’immobile
               — con accesso chiaro dalla home.
+            </p>
+            <p className="mt-6 text-sm sm:text-base text-landing-muted/90 max-w-2xl leading-relaxed text-pretty animate-in-up animate-delay-2">
+              {PRICING_ICP_LINE}{' '}
+              <Link
+                href="/pricing"
+                className="font-medium text-[var(--cta-solid)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--cta-solid)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-ink)] rounded-sm"
+              >
+                Vedi i piani
+              </Link>
+              .
             </p>
             <div className="mt-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 animate-in-up animate-delay-3">
               <Link href="/role-entry" className={cn(buttonVariants({ variant: 'cta', size: 'lg' }), 'gap-2')}>
@@ -328,36 +310,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer
-        className="border-t border-white/10 bg-landing-ink text-landing-muted py-12"
-        role="contentinfo"
-      >
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left">
-            <p className="font-display text-lg font-semibold text-landing-fg">TMP</p>
-            <p className="mt-1 text-sm max-w-xs text-pretty">
-              Tenant Management Platform — operatività su unità e lifecycle.
-            </p>
-          </div>
-          <nav className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm" aria-label="Footer">
-            <Link
-              href="/role-entry"
-              className="text-landing-fg font-medium min-h-11 inline-flex items-center hover:text-[var(--cta-solid)] transition-colors"
-            >
-              Accesso
-            </Link>
-            <Link href="/login" className="min-h-11 inline-flex items-center hover:text-landing-fg transition-colors">
-              Accedi
-            </Link>
-            <Link href="/privacy" className="min-h-11 inline-flex items-center hover:text-landing-fg transition-colors">
-              Privacy
-            </Link>
-            <Link href="/terms" className="min-h-11 inline-flex items-center hover:text-landing-fg transition-colors">
-              Termini
-            </Link>
-          </nav>
-        </div>
-      </footer>
+      <MarketingSiteFooter />
     </div>
   )
 }
