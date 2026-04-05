@@ -1,0 +1,8 @@
+# Build su Netlify collegato a GitHub: ogni push sul branch di produzione innesca deploy.
+# https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/
+
+[build]
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
